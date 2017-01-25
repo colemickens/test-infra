@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -73,16 +75,33 @@ func main() {
 }
 
 func generate(root string) error {
+	email := os.Getenv("LETSENCRYPT_EMAIL")
+	domains := os.Getenv("LETSENCRYPT_DOMAINS")
+
+	if email != "" {
+		email = "spxtr@google.com"
+	}
+
+	domainList := []string{}
+	if domains != "" {
+		domainList = strings.Split(domains, ",", -1)
+	} else {
+		domainList = []string{"prow.k8s.io", "prow.kubernetes.io"}
+	}
+	domainArgs := make([]string, len(domainList)*2)
+	for _, domain := range domainList {
+		domainArgs = append(domainArgs, "-d", domain)
+	}
+
 	args := []string{
 		"certonly",
 		"--agree-tos",
-		"--email", "spxtr@google.com",
+		"--email", email,
 		"--non-interactive",
 		"--webroot",
 		"-w", root,
-		"-d", "prow.k8s.io",
-		"-d", "prow.kubernetes.io",
 	}
+	args = append(args, domainArgs...)
 	cmd := exec.Command("certbot", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -101,11 +120,11 @@ func renew() error {
 }
 
 func replaceSecret(c *kube.Client) error {
-	key, err := ioutil.ReadFile("/etc/letsencrypt/live/prow.k8s.io/privkey.pem")
+	key, err := ioutil.ReadFile("/etc/letsencrypt/live/" + domainList[0] + "/privkey.pem")
 	if err != nil {
 		return fmt.Errorf("could not read privkey: %v", err)
 	}
-	cert, err := ioutil.ReadFile("/etc/letsencrypt/live/prow.k8s.io/fullchain.pem")
+	cert, err := ioutil.ReadFile("/etc/letsencrypt/live/" + domainList[0] + "/fullchain.pem")
 	if err != nil {
 		return fmt.Errorf("could not read fullchain: %v", err)
 	}
