@@ -54,6 +54,8 @@ SERVICE_ACCOUNT_FILE = ${HOME}/service-account.json
 create-cluster:
 	gcloud -q container --project "$(PROJECT)" clusters create "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-4 --num-nodes 4 --node-labels=role=prow --scopes "https://www.googleapis.com/auth/compute","https://www.googleapis.com/auth/devstorage.full_control","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management" --network "default" --enable-cloud-logging --enable-cloud-monitoring
 	gcloud -q container node-pools create build-pool --project "$(PROJECT)" --cluster "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-8 --num-nodes 4 --local-ssd-count=1 --node-labels=role=build
+
+deploy-prow:
 	kubectl create secret generic hmac-token --from-file=hmac=$(HOOK_SECRET_FILE)
 	kubectl create secret generic oauth-token --from-file=oauth=$(OAUTH_SECRET_FILE)
 	kubectl create secret generic jenkins-token --from-file=jenkins=$(JENKINS_SECRET_FILE)
@@ -74,7 +76,7 @@ create-cluster:
 	@make splice-deployment --no-print-directory
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
 
-update-cluster:
+update-prow:
 	@make line-image --no-print-directory
 	@make hook-image --no-print-directory
 	@make sinker-image --no-print-directory
