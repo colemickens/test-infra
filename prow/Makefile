@@ -73,7 +73,7 @@ create-cluster:
 	@make deck-service --no-print-directory
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
-	kubectl apply -f cluster/ingress.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
 
 update-cluster:
 	@make line-image --no-print-directory
@@ -85,6 +85,7 @@ update-cluster:
 	@make deck-deployment --no-print-directory
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
 
 update-jobs:
 	kubectl create configmap config --from-file=config=config.yaml --dry-run -o yaml | kubectl replace configmap config -f -
@@ -106,10 +107,10 @@ hook-image:
 	$(DOCKER) -- push "$(REGISTRY)/hook:$(HOOK_VERSION)"
 
 hook-deployment:
-	kubectl apply -f cluster/hook_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/hook_deployment.yaml | kubectl apply -f -
 
 hook-service:
-	kubectl create -f cluster/hook_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/hook_service.yaml | kubectl apply -f -
 
 line-image:
 	CGO_ENABLED=0 go build -o cmd/line/line k8s.io/test-infra/prow/cmd/line
@@ -122,7 +123,7 @@ sinker-image:
 	$(DOCKER) -- push "$(REGISTRY)/sinker:$(SINKER_VERSION)"
 
 sinker-deployment:
-	kubectl apply -f cluster/sinker_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/sinker_deployment.yaml | kubectl apply -f -
 
 deck-image:
 	CGO_ENABLED=0 go build -o cmd/deck/deck k8s.io/test-infra/prow/cmd/deck
@@ -130,10 +131,10 @@ deck-image:
 	$(DOCKER) -- push "$(REGISTRY)/deck:$(DECK_VERSION)"
 
 deck-deployment:
-	kubectl apply -f cluster/deck_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/deck_deployment.yaml | kubectl apply -f -
 
 deck-service:
-	kubectl create -f cluster/deck_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/deck_service.yaml | kubectl apply -f -
 
 splice-image:
 	CGO_ENABLED=0 go build -o cmd/splice/splice k8s.io/test-infra/prow/cmd/splice
@@ -141,7 +142,7 @@ splice-image:
 	$(DOCKER) -- push "$(REGISTRY)/splice:$(SPLICE_VERSION)"
 
 splice-deployment:
-	kubectl apply -f cluster/splice_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/splice_deployment.yaml | kubectl apply -f -
 
 marque-image:
 	CGO_ENABLED=0 go build -o cmd/marque/marque k8s.io/test-infra/prow/cmd/marque
@@ -149,10 +150,10 @@ marque-image:
 	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
 marque-deployment:
-	kubectl apply -f cluster/marque_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml | kubectl apply -f -
 
 marque-service:
-	kubectl apply -f cluster/marque_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_service.yaml | kubectl apply -f -
 
 tot-image:
 	CGO_ENABLED=0 go build -o cmd/tot/tot k8s.io/test-infra/prow/cmd/tot
@@ -160,10 +161,10 @@ tot-image:
 	$(DOCKER) -- push "$(REGISTRY)/tot:$(TOT_VERSION)"
 
 tot-deployment:
-	kubectl apply -f cluster/tot_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/tot_deployment.yaml | kubectl apply -f -
 
 tot-service:
-	kubectl apply -f cluster/tot_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/tot_service.yaml | kubectl apply -f -
 
 crier-image:
 	CGO_ENABLED=0 go build -o cmd/crier/crier k8s.io/test-infra/prow/cmd/crier
