@@ -158,6 +158,8 @@ func main() {
 	}
 	l := logrus.WithFields(fields(client))
 	if foundPresubmit && presubmit.Spec == nil {
+		l.Warning("refusing to do a jenkins job")
+		return
 		if err := client.TestPRJenkins(); err != nil {
 			l.WithError(err).Error("Error testing PR on Jenkins.")
 			return
@@ -257,6 +259,7 @@ func (c *testClient) TestKubernetes() error {
 
 	for i := range spec.Containers {
 		spec.Containers[i].Name = fmt.Sprintf("%s-%d", podName, i)
+		spec.Containers[i].ImagePullPolicy = "Always"
 		spec.Containers[i].Env = append(spec.Containers[i].Env,
 			kube.EnvVar{
 				Name:  "JOB_NAME",
@@ -310,14 +313,6 @@ func (c *testClient) TestKubernetes() error {
 				MountPath: "/root/.cache",
 			},
 		)
-		// Set the HostPort to 9999 for all build pods so that they are forced
-		// onto different nodes. Once pod affinity is GA, use that instead.
-		spec.Containers[i].Ports = append(spec.Containers[i].Ports,
-			kube.Port{
-				ContainerPort: 9999,
-				HostPort:      9999,
-			},
-		)
 	}
 	spec.Volumes = append(spec.Volumes,
 		kube.Volume{
@@ -329,7 +324,7 @@ func (c *testClient) TestKubernetes() error {
 		kube.Volume{
 			Name: "cache-ssd",
 			HostPath: &kube.HostPathSource{
-				Path: "/mnt/disks/ssd0",
+				Path: "/mnt/resource", // TODO: Parameterize
 			},
 		},
 	)

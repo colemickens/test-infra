@@ -29,7 +29,15 @@ spec:
         role: prow
       containers:
       - name: marque
-        image: gcr.io/k8s-prow/marque:0.1
+        image: __REGISTRY__/marque:0.1
+        imagePullPolicy: "Always"
         ports:
           - name: http
             containerPort: 80
+        env:
+          - name: 'EMAIL'
+            value: '__EMAIL__'
+          - name: 'DOMAINS'
+            value: '__DOMAINS__'
+          - name: 'SECRET_NAME'
+            value: '__SECRET_NAME__'

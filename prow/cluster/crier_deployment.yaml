@@ -30,9 +30,9 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: crier
-        image: gcr.io/k8s-prow/crier:0.5
+        image: __REGISTRY__/crier:0.5
         args:
-        - "--dry-run=false"
+        - "--dry-run=true"
         - "--github-bot-name=k8s-ci-robot"
         imagePullPolicy: Always
         ports:

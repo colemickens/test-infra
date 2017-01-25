@@ -11,20 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: ing
+  name: deck
   annotations:
     "kubernetes.io/ingress.global-static-ip-name": prow
 spec:
   tls:
-  - secretName: prow-k8s-cert
+  - secretName: 'prow-k8s-cert'
+    hosts:
+    - '__DOMAIN__'
   rules:
-  - http:
+  - host: '__DOMAIN__'
+    http:
       paths:
-      - path: /*
+      - path: /
         backend:
           serviceName: deck
           servicePort: 80
@@ -32,7 +35,7 @@ spec:
         backend:
           serviceName: hook
           servicePort: 8888
-      - path: /.well-known/*
+      - path: /.well-known/
         backend:
           serviceName: marque
           servicePort: 80

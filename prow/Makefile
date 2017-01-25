@@ -24,29 +24,56 @@ MARQUE_VERSION = 0.1
 TOT_VERSION    = 0.0
 CRIER_VERSION  = 0.5
 
+
 # These are the usual GKE variables.
 PROJECT = k8s-prow
 ZONE = us-central1-f
 CLUSTER = prow
 
+# These are the usual Azure variables.
+LOCATION = westus
+RESOURCE_GROUP = colemick-prow
+
+# Cloud-specfic variables
+#REGISTRY = $(REGISTRY)
+#DOCKER   = gcloud docker --
+REGISTRY = docker.io/colemickens
+DOCKER   = docker
+
+EMAIL   = colemick@microsoft.com
+DOMAIN = prow.ci.azure-containers.io
+SECRET_NAME = marque-deck-tls
+
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
 # token of whatever account you want to comment and update statuses.
-HOOK_SECRET_FILE = ${HOME}/hook
-OAUTH_SECRET_FILE = ${HOME}/k8s-oauth-token
+HOOK_SECRET_FILE = $(HOME)/secrets/hook
+OAUTH_SECRET_FILE = $(HOME)/secrets/k8s-oauth-token
 
 # The Jenkins secret is the API token, and the address file contains Jenkins'
 # URL, such as http://pull-jenkins-master:8080, without a newline.
-JENKINS_SECRET_FILE = ${HOME}/jenkins
-JENKINS_ADDRESS_FILE = ${HOME}/jenkins-address
+JENKINS_SECRET_FILE = $(HOME)/secrets/jenkins
+JENKINS_ADDRESS_FILE = $(HOME)/secrets/jenkins-address
 
 # Service account key for bootstrap jobs.
-SERVICE_ACCOUNT_FILE = ${HOME}/service-account.json
+SERVICE_ACCOUNT_FILE = $(HOME)/secrets/service-account.json
 
 # Should probably move this to a script or something.
-create-cluster:
+create-cluster-gce:
 	gcloud -q container --project "$(PROJECT)" clusters create "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-4 --num-nodes 4 --node-labels=role=prow --scopes "https://www.googleapis.com/auth/compute","https://www.googleapis.com/auth/devstorage.full_control","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management" --network "default" --enable-cloud-logging --enable-cloud-monitoring
 	gcloud -q container node-pools create build-pool --project "$(PROJECT)" --cluster "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-8 --num-nodes 4 --local-ssd-count=1 --node-labels=role=build
+
+create-cluster-azure:
+	az group show --name=$(RESOURCE_GROUP) \
+		|| az group create --name=$(RESOURCE_GROUP) --location=$(LOCATION)
+	az acs show --name=prow --resource-group=$(RESOURCE_GROUP) \
+		|| az acs create --name=prow --resource-group=$(RESOURCE_GROUP) --orchestrator=kubernetes --location=$(LOCATION) --agent-count=10 --agent-vm-size=Standard_D5_v2
+	rm ./cluster/secrets/kubeconfig*
+	az acs kubernetes get-credentials --name=prow --resource-group=$(RESOURCE_GROUP) -f $(KUBECONFIG)
+	$(eval export KUBECONFIG=$(KUBECONFIG))
+	@make update-prow-nginx
+
+deploy-prow:
 	kubectl create secret generic hmac-token --from-file=hmac=$(HOOK_SECRET_FILE)
 	kubectl create secret generic oauth-token --from-file=oauth=$(OAUTH_SECRET_FILE)
 	kubectl create secret generic jenkins-token --from-file=jenkins=$(JENKINS_SECRET_FILE)
@@ -54,38 +81,41 @@ create-cluster:
 	kubectl create configmap jenkins-address --from-file=jenkins-address=$(JENKINS_ADDRESS_FILE)
 	kubectl create configmap config --from-file=config=config.yaml
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml
+	@make update-prow
+
+update-prow:
 	@make line-image --no-print-directory
+	@make crier-image --no-print-directory
+	@make crier-deployment --no-print-directory
 	@make hook-image --no-print-directory
-	@make deck-image --no-print-directory
-	@make sinker-image --no-print-directory
 	@make hook-deployment --no-print-directory
-	@make hook-service --no-print-directory
-	@make sinker-deployment --no-print-directory
+	@make deck-image --no-print-directory
 	@make deck-deployment --no-print-directory
+	@make sinker-image --no-print-directory
+	@make sinker-deployment --no-print-directory
+	@make splice-image --no-print-directory
+	@make splice-deployment --no-print-directory
+	@make marque-image --no-print-directory
+	@make marque-deployment --no-print-directory
+	@make tot-image --no-print-directory
+	@make tot-deployment --no-print-directory
+	@make crier-service --no-print-directory
 	@make deck-service --no-print-directory
-	@make splice-image --no-print-directory
-	@make splice-deployment --no-print-directory
-	kubectl apply -f cluster/ingress.yaml
+	@make hook-service --no-print-directory
+	@make marque-service --no-print-directory
+	@make tot-service --no-print-directory
 
-update-cluster: get-cluster-credentials
-	@make line-image --no-print-directory
-	@make hook-image --no-print-directory
-	@make sinker-image --no-print-directory
-	@make deck-image --no-print-directory
-	@make hook-deployment --no-print-directory
-	@make sinker-deployment --no-print-directory
-	@make deck-deployment --no-print-directory
-	@make splice-image --no-print-directory
-	@make splice-deployment --no-print-directory
+clean-prow:
+	kubectl delete deployments crier marque deck hook sinker splice tot --ignore-not-found
+	kubectl delete ingress prow-deck --ignore-not-found
+	kubectl delete configmap job-configs plugins jenkins-address --ignore-not-found
+	kubectl delete secret hmac-token oauth-token jenkins-token azure-ci service-account --ignore-not-found
 
-update-config: get-cluster-credentials
+update-jobs:
 	kubectl create configmap config --from-file=config=config.yaml --dry-run -o yaml | kubectl replace configmap config -f -
 
-update-plugins: get-cluster-credentials
+update-plugins:
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml --dry-run -o yaml | kubectl replace configmap plugins -f -
-
-get-cluster-credentials:
-	gcloud container clusters get-credentials "$(CLUSTER)" --project="$(PROJECT)" --zone="$(ZONE)"
 
 build:
 	go install ./cmd/...
@@ -97,78 +127,86 @@ test:
 
 hook-image:
 	CGO_ENABLED=0 go build -o cmd/hook/hook k8s.io/test-infra/prow/cmd/hook
-	docker build -t "gcr.io/$(PROJECT)/hook:$(HOOK_VERSION)" cmd/hook
-	gcloud docker -- push "gcr.io/$(PROJECT)/hook:$(HOOK_VERSION)"
+	docker build -t "$(REGISTRY)/hook:$(HOOK_VERSION)" cmd/hook
+	$(DOCKER) push "$(REGISTRY)/hook:$(HOOK_VERSION)"
 
 hook-deployment:
-	kubectl apply -f cluster/hook_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/hook_deployment.yaml | kubectl apply -f -
 
 hook-service:
-	kubectl create -f cluster/hook_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/hook_service.yaml | kubectl apply -f -
 
 line-image:
 	CGO_ENABLED=0 go build -o cmd/line/line k8s.io/test-infra/prow/cmd/line
-	docker build -t "gcr.io/$(PROJECT)/line:$(LINE_VERSION)" cmd/line
-	gcloud docker -- push "gcr.io/$(PROJECT)/line:$(LINE_VERSION)"
+	docker build -t "$(REGISTRY)/line:$(LINE_VERSION)" cmd/line
+	$(DOCKER) push "$(REGISTRY)/line:$(LINE_VERSION)"
 
 sinker-image:
 	CGO_ENABLED=0 go build -o cmd/sinker/sinker k8s.io/test-infra/prow/cmd/sinker
-	docker build -t "gcr.io/$(PROJECT)/sinker:$(SINKER_VERSION)" cmd/sinker
-	gcloud docker -- push "gcr.io/$(PROJECT)/sinker:$(SINKER_VERSION)"
+	docker build -t "$(REGISTRY)/sinker:$(SINKER_VERSION)" cmd/sinker
+	$(DOCKER) push "$(REGISTRY)/sinker:$(SINKER_VERSION)"
 
 sinker-deployment:
-	kubectl apply -f cluster/sinker_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/sinker_deployment.yaml | kubectl apply -f -
 
 deck-image:
 	CGO_ENABLED=0 go build -o cmd/deck/deck k8s.io/test-infra/prow/cmd/deck
-	docker build -t "gcr.io/$(PROJECT)/deck:$(DECK_VERSION)" cmd/deck
-	gcloud docker -- push "gcr.io/$(PROJECT)/deck:$(DECK_VERSION)"
+	docker build -t "$(REGISTRY)/deck:$(DECK_VERSION)" cmd/deck
+	$(DOCKER) push "$(REGISTRY)/deck:$(DECK_VERSION)"
 
 deck-deployment:
-	kubectl apply -f cluster/deck_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/deck_deployment.yaml | kubectl apply -f -
 
 deck-service:
-	kubectl create -f cluster/deck_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/deck_service.yaml | kubectl apply -f -
 
 splice-image:
 	CGO_ENABLED=0 go build -o cmd/splice/splice k8s.io/test-infra/prow/cmd/splice
-	docker build -t "gcr.io/$(PROJECT)/splice:$(SPLICE_VERSION)" cmd/splice
-	gcloud docker -- push "gcr.io/$(PROJECT)/splice:$(SPLICE_VERSION)"
+	docker build -t "$(REGISTRY)/splice:$(SPLICE_VERSION)" cmd/splice
+	$(DOCKER) push "$(REGISTRY)/splice:$(SPLICE_VERSION)"
 
 splice-deployment:
-	kubectl apply -f cluster/splice_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/splice_deployment.yaml | kubectl apply -f -
 
 marque-image:
 	CGO_ENABLED=0 go build -o cmd/marque/marque k8s.io/test-infra/prow/cmd/marque
-	docker build -t "gcr.io/$(PROJECT)/marque:$(MARQUE_VERSION)" cmd/marque
-	gcloud docker -- push "gcr.io/$(PROJECT)/marque:$(MARQUE_VERSION)"
+	docker build -t "$(REGISTRY)/marque:$(MARQUE_VERSION)" cmd/marque
+	$(DOCKER) push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
 marque-deployment:
-	kubectl apply -f cluster/marque_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
+	| sed 's|__EMAIL__|$(EMAIL)|g' \
+	| sed 's|__DOMAINS__|$(DOMAIN)|g' \
+	| sed 's|__SECRET_NAME__|$(SECRET_NAME)|g' \
+		| kubectl apply -f -
 
 marque-service:
-	kubectl apply -f cluster/marque_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_service.yaml | kubectl apply -f -
 
 tot-image:
 	CGO_ENABLED=0 go build -o cmd/tot/tot k8s.io/test-infra/prow/cmd/tot
-	docker build -t "gcr.io/$(PROJECT)/tot:$(TOT_VERSION)" cmd/tot
-	gcloud docker -- push "gcr.io/$(PROJECT)/tot:$(TOT_VERSION)"
+	docker build -t "$(REGISTRY)/tot:$(TOT_VERSION)" cmd/tot
+	$(DOCKER) push "$(REGISTRY)/tot:$(TOT_VERSION)"
 
 tot-deployment:
-	kubectl apply -f cluster/tot_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/tot_deployment.yaml | kubectl apply -f -
 
 tot-service:
-	kubectl apply -f cluster/tot_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/tot_service.yaml | kubectl apply -f -
 
 crier-image:
 	CGO_ENABLED=0 go build -o cmd/crier/crier k8s.io/test-infra/prow/cmd/crier
-	docker build -t "gcr.io/$(PROJECT)/crier:$(CRIER_VERSION)" cmd/crier
-	gcloud docker -- push "gcr.io/$(PROJECT)/crier:$(CRIER_VERSION)"
+	docker build -t "$(REGISTRY)/crier:$(CRIER_VERSION)" cmd/crier
+	$(DOCKER) push "$(REGISTRY)/crier:$(CRIER_VERSION)"
 
 crier-deployment:
-	kubectl apply -f cluster/crier_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_deployment.yaml | kubectl apply -f -
 
 crier-service:
-	kubectl apply -f cluster/crier_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_service.yaml | kubectl apply -f -
 
-.PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment
+prow-ingress:
+	sed 's|__DOMAIN__|$(DOMAIN)|g' cluster/ingress.yaml \
+		| kubectl apply -f -
+
+.PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment prow-ingress

@@ -19,7 +19,7 @@ metadata:
   labels:
     app: deck
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -35,7 +35,8 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: deck
-        image: gcr.io/k8s-prow/deck:0.16
+        image: __REGISTRY__/deck:0.16
+        imagePullPolicy: Always
         ports:
           - name: http
             containerPort: 80

@@ -2,31 +2,6 @@
 # Keys: Full repo name: "org/repo".
 # Values: List of plugins to run against the repo.
 ---
-google/cadvisor:
+colemickens/acs-engine:
 - trigger
-
-kubernetes/charts:
-- trigger
-
-kubernetes/heapster:
-- trigger
-
-kubernetes/kops:
-- trigger
-
-kubernetes/kubernetes:
-- trigger
-- release-note
-
-kubernetes/test-infra:
-- trigger
-
-kubernetes:
-- cla
-- close
-- heart
-- lgtm
 - yuks
-
-kubernetes-incubator:
-- cla

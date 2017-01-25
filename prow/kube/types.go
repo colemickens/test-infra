@@ -126,13 +126,14 @@ type ObjectFieldSelector struct {
 }
 
 type Container struct {
-	Name    string   `json:"name,omitempty"`
-	Image   string   `json:"image,omitempty"`
-	Command []string `json:"command,omitempty"`
-	Args    []string `json:"args,omitempty"`
-	WorkDir string   `json:"workingDir,omitempty"`
-	Env     []EnvVar `json:"env,omitempty"`
-	Ports   []Port   `json:"ports,omitempty"`
+	Name            string   `json:"name,omitempty"`
+	Image           string   `json:"image,omitempty"`
+	ImagePullPolicy string   `json:"imagePullPolicy"`
+	Command         []string `json:"command,omitempty"`
+	Args            []string `json:"args,omitempty"`
+	WorkDir         string   `json:"workingDir,omitempty"`
+	Env             []EnvVar `json:"env,omitempty"`
+	Ports           []Port   `json:"ports,omitempty"`
 
 	Resources       Resources        `json:"resources,omitempty"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
@@ -151,10 +152,16 @@ type EnvVar struct {
 }
 
 type EnvVarSource struct {
-	ConfigMap ConfigMapKeySelector `json:"configMapKeyRef,omitempty"`
+	ConfigMap *ConfigMapKeySelector `json:"configMapKeyRef,omitempty"`
+	Secret    *SecretKeySelector    `json:"secretKeyRef,omitempty"`
 }
 
 type ConfigMapKeySelector struct {
+	Name string `json:"name,omitempty"`
+	Key  string `json:"key,omitempty"`
+}
+
+type SecretKeySelector struct {
 	Name string `json:"name,omitempty"`
 	Key  string `json:"key,omitempty"`
 }
