@@ -24,10 +24,18 @@ MARQUE_VERSION = 0.1
 TOT_VERSION    = 0.0
 CRIER_VERSION  = 0.2
 
+
 # These are the usual GKE variables.
 PROJECT = k8s-prow
 ZONE = us-central1-f
 CLUSTER = prow
+
+# Cloud-specfic variables
+#REGISTRY = $(REGISTRY)
+#DOCKER   = gcloud docker
+REGISTRY = docker.io/colemickens
+DOCKER   = docker
+# TODO: Maintainer in the image is a Googler
 
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
@@ -94,8 +102,8 @@ test:
 
 hook-image:
 	CGO_ENABLED=0 go build -o cmd/hook/hook k8s.io/test-infra/prow/cmd/hook
-	docker build -t "gcr.io/$(PROJECT)/hook:$(HOOK_VERSION)" cmd/hook
-	gcloud docker -- push "gcr.io/$(PROJECT)/hook:$(HOOK_VERSION)"
+	docker build -t "$(REGISTRY)/hook:$(HOOK_VERSION)" cmd/hook
+	$(DOCKER) -- push "$(REGISTRY)/hook:$(HOOK_VERSION)"
 
 hook-deployment:
 	kubectl apply -f cluster/hook_deployment.yaml
@@ -105,21 +113,21 @@ hook-service:
 
 line-image:
 	CGO_ENABLED=0 go build -o cmd/line/line k8s.io/test-infra/prow/cmd/line
-	docker build -t "gcr.io/$(PROJECT)/line:$(LINE_VERSION)" cmd/line
-	gcloud docker -- push "gcr.io/$(PROJECT)/line:$(LINE_VERSION)"
+	docker build -t "$(REGISTRY)/line:$(LINE_VERSION)" cmd/line
+	$(DOCKER) -- push "$(REGISTRY)/line:$(LINE_VERSION)"
 
 sinker-image:
 	CGO_ENABLED=0 go build -o cmd/sinker/sinker k8s.io/test-infra/prow/cmd/sinker
-	docker build -t "gcr.io/$(PROJECT)/sinker:$(SINKER_VERSION)" cmd/sinker
-	gcloud docker -- push "gcr.io/$(PROJECT)/sinker:$(SINKER_VERSION)"
+	docker build -t "$(REGISTRY)/sinker:$(SINKER_VERSION)" cmd/sinker
+	$(DOCKER) -- push "$(REGISTRY)/sinker:$(SINKER_VERSION)"
 
 sinker-deployment:
 	kubectl apply -f cluster/sinker_deployment.yaml
 
 deck-image:
 	CGO_ENABLED=0 go build -o cmd/deck/deck k8s.io/test-infra/prow/cmd/deck
-	docker build -t "gcr.io/$(PROJECT)/deck:$(DECK_VERSION)" cmd/deck
-	gcloud docker -- push "gcr.io/$(PROJECT)/deck:$(DECK_VERSION)"
+	docker build -t "$(REGISTRY)/deck:$(DECK_VERSION)" cmd/deck
+	$(DOCKER) -- push "$(REGISTRY)/deck:$(DECK_VERSION)"
 
 deck-deployment:
 	kubectl apply -f cluster/deck_deployment.yaml
@@ -129,16 +137,16 @@ deck-service:
 
 splice-image:
 	CGO_ENABLED=0 go build -o cmd/splice/splice k8s.io/test-infra/prow/cmd/splice
-	docker build -t "gcr.io/$(PROJECT)/splice:$(SPLICE_VERSION)" cmd/splice
-	gcloud docker -- push "gcr.io/$(PROJECT)/splice:$(SPLICE_VERSION)"
+	docker build -t "$(REGISTRY)/splice:$(SPLICE_VERSION)" cmd/splice
+	$(DOCKER) -- push "$(REGISTRY)/splice:$(SPLICE_VERSION)"
 
 splice-deployment:
 	kubectl apply -f cluster/splice_deployment.yaml
 
 marque-image:
 	CGO_ENABLED=0 go build -o cmd/marque/marque k8s.io/test-infra/prow/cmd/marque
-	docker build -t "gcr.io/$(PROJECT)/marque:$(MARQUE_VERSION)" cmd/marque
-	gcloud docker -- push "gcr.io/$(PROJECT)/marque:$(MARQUE_VERSION)"
+	docker build -t "$(REGISTRY)/marque:$(MARQUE_VERSION)" cmd/marque
+	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
 marque-deployment:
 	kubectl apply -f cluster/marque_deployment.yaml
@@ -148,8 +156,8 @@ marque-service:
 
 tot-image:
 	CGO_ENABLED=0 go build -o cmd/tot/tot k8s.io/test-infra/prow/cmd/tot
-	docker build -t "gcr.io/$(PROJECT)/tot:$(TOT_VERSION)" cmd/tot
-	gcloud docker -- push "gcr.io/$(PROJECT)/tot:$(TOT_VERSION)"
+	docker build -t "$(REGISTRY)/tot:$(TOT_VERSION)" cmd/tot
+	$(DOCKER) -- push "$(REGISTRY)/tot:$(TOT_VERSION)"
 
 tot-deployment:
 	kubectl apply -f cluster/tot_deployment.yaml
