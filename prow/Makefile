@@ -66,7 +66,7 @@ create-cluster:
 	@make splice-deployment --no-print-directory
 	kubectl apply -f cluster/ingress.yaml
 
-update-cluster: get-cluster-credentials
+update-cluster:
 	@make line-image --no-print-directory
 	@make hook-image --no-print-directory
 	@make sinker-image --no-print-directory
@@ -77,14 +77,11 @@ update-cluster: get-cluster-credentials
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
 
-update-jobs: get-cluster-credentials
+update-jobs:
 	kubectl create configmap job-configs --from-file=presubmit=presubmit.yaml --from-file=postsubmit=postsubmit.yaml --dry-run -o yaml | kubectl replace configmap job-configs -f -
 
-update-plugins: get-cluster-credentials
+update-plugins:
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml --dry-run -o yaml | kubectl replace configmap plugins -f -
-
-get-cluster-credentials:
-	gcloud container clusters get-credentials "$(CLUSTER)" --project="$(PROJECT)" --zone="$(ZONE)"
 
 build:
 	go install ./cmd/...
