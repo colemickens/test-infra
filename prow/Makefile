@@ -40,7 +40,8 @@ REGISTRY = docker.io/colemickens
 DOCKER   = docker
 
 LE_EMAIL   = cole.mickens@gmail.com
-LE_DOMAINS = prow.azure-containers.io
+LE_DOMAINS = test0.prow.azure-containers.io
+# TODO: sort this out, at least rename
 # TODO: Maintainer in the image is a Googler
 
 # These are GitHub credentials in files on your own machine.
@@ -79,21 +80,12 @@ deploy-prow:
 	#kubectl create configmap jenkins-address --from-file=jenkins-address=$(JENKINS_ADDRESS_FILE)
 	kubectl create configmap job-configs --from-file=presubmit=presubmit.yaml --from-file=postsubmit=postsubmit.yaml
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml
-	@make line-image --no-print-directory
-	@make hook-image --no-print-directory
-	@make deck-image --no-print-directory
-	@make sinker-image --no-print-directory
-	@make hook-deployment --no-print-directory
-	@make hook-service --no-print-directory
-	@make sinker-deployment --no-print-directory
-	@make deck-deployment --no-print-directory
-	@make deck-service --no-print-directory
-	@make splice-image --no-print-directory
-	@make splice-deployment --no-print-directory
-	@make update-prow-ingress --no-print-directory
+	@make update-prow
 
 update-prow-ingress:
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml \
+	| sed 's|__PROW_DOMAIN__|$(LE_DOMAINS)|' \
+		| kubectl apply -f -
 
 update-prow-nginx:
 	kubectl apply -f https://raw.githubusercontent.com/kubernetes/contrib/master/ingress/controllers/nginx/examples/daemonset/as-daemonset.yaml
@@ -110,7 +102,9 @@ update-prow:
 	@make deck-deployment --no-print-directory
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
+	@make marque-image --no-print-directory
+	@make marque-deployment --no-print-directory
+	@make update-prow-ingress --no-print-directory
 
 clean-prow:
 	kubectl delete deployments marque deck hook sinker splice --ignore-not-found

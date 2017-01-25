@@ -1,42 +1,13 @@
 ---
-kubernetes/kubernetes:
-- name: ci-kubernetes-bazel
+Azure/acs-engine:
+- name: pull-acs-engine-unit tests
+  context: ACS-Engine unit tests
+  always_run: true
+  rerun_command: "@acs-bot unit test this"
+  trigger: "@acs-bot (unit )?test this"
   branches:
   - master
   spec:
     containers:
-    - image: gcr.io/k8s-testimages/bazelbuild:0.8
-      args:
-      - "--branch=$(PULL_REFS)"
-      - "--upload=gs://kubernetes-jenkins/logs"
-      - "--git-cache=/root/.cache/git"
-      - "--clean"
-      # Bazel needs privileged mode in order to sandbox builds.
-      securityContext:
-        privileged: true
-
-kubernetes/test-infra:
-- name: ci-test-infra-bazel
-  branches:
-  - master
-  spec:
-    containers:
-    - image: gcr.io/k8s-testimages/bazelbuild:0.8
-      args:
-      - "--branch=$(PULL_REFS)"
-      - "--upload=gs://kubernetes-jenkins/logs"
-      - "--git-cache=/root/.cache/git"
-      - "--clean"
-      # Bazel needs privileged mode in order to sandbox builds.
-      securityContext:
-        privileged: true
-
-- name: maintenance-ci-testgrid-config-upload
-  branches:
-  - master
-  spec:
-    containers:
-    - image: gcr.io/k8s-testimages/gcloud-in-go:0.1
-      args:
-      - "--branch=$(PULL_REFS)"
-      - "--upload=gs://kubernetes-jenkins/logs"
+    - image: docker.io/library/golang
+      command: [ "bash", "-c", "git clone git@github.com:Azure/ACS-Engine; cd ACS-Engine; make" ]
