@@ -335,7 +335,15 @@ func (c *Client) ReplaceSecret(name string, s Secret) error {
 	}
 	buf := bytes.NewBuffer(b)
 	path := fmt.Sprintf("/api/v1/namespaces/%s/secrets/%s", c.namespace, name)
-	_, err = c.request(http.MethodPut, path, nil, buf)
+	if _, err = c.request(http.MethodDelete, path, nil, nil); err != nil {
+		_, innerErr := c.request(http.MethodDelete, path, nil, nil)
+		if innerErr != nil {
+			return innerErr
+		}
+	}
+	return err
+	path = fmt.Sprintf("/api/v1/namespaces/%s/secrets", c.namespace)
+	_, err = c.request(http.MethodPost, path, nil, buf)
 	return err
 }
 

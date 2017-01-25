@@ -15,7 +15,7 @@
 FROM alpine:3.4
 MAINTAINER spxtr@google.com
 
-RUN apk update && apk add --no-cache certbot
+RUN apk update && apk add --no-cache certbot bash
 
 COPY marque /marque
 ENTRYPOINT ["/marque"]

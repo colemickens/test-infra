@@ -30,6 +30,12 @@ spec:
       containers:
       - name: marque
         image: __REGISTRY__/marque:0.1
+        imagePullPolicy: "Always"
         ports:
           - name: http
             containerPort: 80
+        env:
+          - name: 'LETSENCRYPT_EMAIL'
+            value: '__LETSENCRYPT_EMAIL__'
+          - name: 'LETSENCRYPT_DOMAINS'
+            value: '__LETSENCRYPT_DOMAINS__'

@@ -20,11 +20,14 @@ metadata:
     "kubernetes.io/ingress.global-static-ip-name": prow
 spec:
   tls:
-  - secretName: prow-k8s-cert
+  - secretName: 'prow-k8s-cert'
+    hosts:
+    - 'prow.azure-containers.io'
   rules:
-  - http:
+  - host: 'prow.azure-containers.io'
+    http:
       paths:
-      - path: /*
+      - path: /
         backend:
           serviceName: deck
           servicePort: 80
@@ -32,7 +35,7 @@ spec:
         backend:
           serviceName: hook
           servicePort: 8888
-      - path: /.well-known/*
+      - path: /.well-known/
         backend:
           serviceName: marque
           servicePort: 80

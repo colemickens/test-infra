@@ -178,10 +178,12 @@ func main() {
 	}
 	l := logrus.WithFields(fields(client))
 	if foundPresubmit && presubmit.Spec == nil {
-		if err := client.TestPRJenkins(); err != nil {
-			l.WithError(err).Error("Error testing PR on Jenkins.")
-			return
-		}
+		l.Warning("refusing to do a jenkins job")
+		return
+		//if err := client.TestPRJenkins(); err != nil {
+		//	l.WithError(err).Error("Error testing PR on Jenkins.")
+		//	return
+		//}
 	} else {
 		if err := client.TestKubernetes(); err != nil {
 			l.WithError(err).Error("Error testing PR on Kubernetes.")
