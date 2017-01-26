@@ -29,7 +29,7 @@ import (
 const (
 	pluginName = "trigger"
 	lgtmLabel  = "lgtm"
-	trustedOrg = "kubernetes"
+	trustedOrg = "Azure" // TODO: parameterize
 )
 
 func init() {
