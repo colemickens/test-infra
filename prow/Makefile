@@ -30,31 +30,48 @@ PROJECT = k8s-prow
 ZONE = us-central1-f
 CLUSTER = prow
 
+# These are the usual Azure variables.
+LOCATION = westus
+RESOURCE_GROUP = colemick-k8s-prow
+
 # Cloud-specfic variables
 #REGISTRY = $(REGISTRY)
 #DOCKER   = gcloud docker
 REGISTRY = docker.io/colemickens
 DOCKER   = docker
+
+LE_EMAIL   = cole.mickens@gmail.com
+LE_DOMAINS = test0.prow.azure-containers.io
+# TODO: sort this out, at least rename
 # TODO: Maintainer in the image is a Googler
 
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
 # token of whatever account you want to comment and update statuses.
-HOOK_SECRET_FILE = ${HOME}/hook
-OAUTH_SECRET_FILE = ${HOME}/k8s-oauth-token
+HOOK_SECRET_FILE = cluster/secrets/hook
+OAUTH_SECRET_FILE = cluster/secrets/k8s-oauth-token
 
 # The Jenkins secret is the API token, and the address file contains Jenkins'
 # URL, such as http://pull-jenkins-master:8080, without a newline.
-JENKINS_SECRET_FILE = ${HOME}/jenkins
-JENKINS_ADDRESS_FILE = ${HOME}/jenkins-address
+JENKINS_SECRET_FILE = cluster/secrets/jenkins
+JENKINS_ADDRESS_FILE = cluster/secrets/jenkins-address
 
 # Service account key for bootstrap jobs.
-SERVICE_ACCOUNT_FILE = ${HOME}/service-account.json
+SERVICE_ACCOUNT_FILE = cluster/secrets/service-account.json
 
 # Should probably move this to a script or something.
-create-cluster:
+create-cluster-gce:
 	gcloud -q container --project "$(PROJECT)" clusters create "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-4 --num-nodes 4 --node-labels=role=prow --scopes "https://www.googleapis.com/auth/compute","https://www.googleapis.com/auth/devstorage.full_control","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management" --network "default" --enable-cloud-logging --enable-cloud-monitoring
 	gcloud -q container node-pools create build-pool --project "$(PROJECT)" --cluster "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-8 --num-nodes 4 --local-ssd-count=1 --node-labels=role=build
+
+create-cluster-azure:
+	az group get --name=$(RESOURCE_GROUP) \
+		|| az group create --name=$(RESOURCE_GROUP) --location=$(LOCATION)
+	az acs get --name=prow --resource-group=$(RESOURCE_GROUP) \
+		|| az acs create --name=prow --resource-group=$(RESOURCE_GROUP) --orchestrator=kubernetes --location=$(LOCATION) --agent-count=10 --agent-vm-size=Standard_D5_v2
+
+configure-cluster-azure:
+	kubectl label node --all role=build role=prow --overwrite
 
 deploy-prow:
 	kubectl create secret generic hmac-token --from-file=hmac=$(HOOK_SECRET_FILE)
@@ -64,18 +81,17 @@ deploy-prow:
 	kubectl create configmap jenkins-address --from-file=jenkins-address=$(JENKINS_ADDRESS_FILE)
 	kubectl create configmap config --from-file=config=config.yaml
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml
-	@make line-image --no-print-directory
-	@make hook-image --no-print-directory
-	@make deck-image --no-print-directory
-	@make sinker-image --no-print-directory
-	@make hook-deployment --no-print-directory
-	@make hook-service --no-print-directory
-	@make sinker-deployment --no-print-directory
-	@make deck-deployment --no-print-directory
-	@make deck-service --no-print-directory
-	@make splice-image --no-print-directory
-	@make splice-deployment --no-print-directory
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
+	@make update-prow
+
+update-prow-ingress:
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml \
+	| sed 's|__PROW_DOMAIN__|$(LE_DOMAINS)|' \
+		| kubectl apply -f -
+
+update-prow-nginx:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/contrib/master/ingress/controllers/nginx/examples/default/rc-default.yaml
+	kubectl apply -f https://gist.githubusercontent.com/colemickens/f5a1c751ca5ae54f0d6747895da062bc/raw/85c008b290e86e58508fee06b50afbd4648d313c/gistfile1.txt
+	kubectl apply -f https://gist.githubusercontent.com/colemickens/8ef928fb3d642929cdc77dd67ce4dda9/raw/0aa652e2481467081479fb016d8d24b0295d3238/gistfile1.txt
 
 update-prow:
 	@make line-image --no-print-directory
@@ -87,7 +103,16 @@ update-prow:
 	@make deck-deployment --no-print-directory
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml | kubectl apply -f -
+	@make marque-image --no-print-directory
+	@make marque-deployment --no-print-directory
+	@make update-prow-ingress --no-print-directory
+
+clean-prow:
+	kubectl delete deployments marque deck hook sinker splice --ignore-not-found
+	kubectl delete ingress ing --ignore-not-found
+	kubectl delete configmap job-configs plugins --ignore-not-found
+	kubectl delete secret hmac-token oauth-token --ignore-not-found
+	kubectl delete job --all --ignore-not-found
 
 update-jobs:
 	kubectl create configmap config --from-file=config=config.yaml --dry-run -o yaml | kubectl replace configmap config -f -
@@ -152,7 +177,10 @@ marque-image:
 	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
 marque-deployment:
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml | kubectl apply -f -
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
+	| sed 's|__LETSENCRYPT_EMAIL__|$(LE_EMAIL)|g' \
+	| sed 's|__LETSENCRYPT_DOMAINS__|$(LE_DOMAINS)|g' \
+		| kubectl apply -f -
 
 marque-service:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_service.yaml | kubectl apply -f -

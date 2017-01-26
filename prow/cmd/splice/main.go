@@ -36,9 +36,9 @@ import (
 
 var (
 	submitQueueURL = flag.String("submit-queue-endpoint", "http://submit-queue.k8s.io/github-e2e-queue", "Submit Queue status URL")
-	remoteURL      = flag.String("remote-url", "https://github.com/kubernetes/kubernetes", "Remote Git URL")
-	orgName        = flag.String("org", "kubernetes", "Org name")
-	repoName       = flag.String("repo", "kubernetes", "Repo name")
+	remoteURL      = flag.String("remote-url", "https://github.com/Azure/acs-engine", "Remote Git URL")
+	orgName        = flag.String("org", "Azure", "Org name")
+	repoName       = flag.String("repo", "acs-engine", "Repo name")
 	logJson        = flag.Bool("log-json", false, "output log in JSON format")
 	configPath     = flag.String("config-path", "/etc/config/config", "Where is config.yaml.")
 	maxBatchSize   = flag.Int("batch-size", 5, "Maximum batch size")

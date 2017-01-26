@@ -157,6 +157,8 @@ func main() {
 	}
 	l := logrus.WithFields(fields(client))
 	if foundPresubmit && presubmit.Spec == nil {
+		l.Warning("refusing to do a jenkins job")
+		return
 		if err := client.TestPRJenkins(); err != nil {
 			l.WithError(err).Error("Error testing PR on Jenkins.")
 			return
@@ -324,7 +326,7 @@ func (c *testClient) TestKubernetes() error {
 		kube.Volume{
 			Name: "cache-ssd",
 			HostPath: &kube.HostPathSource{
-				Path: "/mnt/disks/ssd0",
+				Path: "/mnt/resource", // TODO: Parameterize
 			},
 		},
 	)
