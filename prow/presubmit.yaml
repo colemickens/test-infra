@@ -26,5 +26,39 @@ colemickens/acs-engine:
   - master
   spec:
     containers:
-    - image: docker.io/library/golang
-      command: [ "bash", "-c", "git clone git@github.com:Azure/ACS-Engine; cd ACS-Engine; make" ]
+    - image: docker.io/colemickens/acs-engine:bf30ceb13ed16068f8555b021c6bfed19f27737f
+      command: [ "/bin/bash", "-c", "/tmp/checkout-pr.sh && make ci" ]
+- name: pull-acs-engine-validate-k8s-msi
+  context: ACS-Engine validate k8s
+  always_run: true
+  rerun_command: "@acs-bot validate k8s"
+  trigger: "@acs-bot validate k8s"
+  branches:
+  - master
+  spec:
+    containers:
+    - image: docker.io/colemickens/acs-engine:bf30ceb13ed16068f8555b021c6bfed19f27737f 
+      command: [ "/bin/bash", "-c", "/tmp/checkout-pr.sh && ./test/deploy-k8s.sh" ]
+      env:
+      - name: LOCATION
+        value: westus
+      - name: SUBSCRIPTION_ID
+        valueFrom:
+          secretKeyRef:
+            name: "azure-ci"
+            key: SUBSCRIPTION_ID
+      - name: TENANT_ID
+        valueFrom:
+          secretKeyRef:
+            name: "azure-ci"
+            key: TENANT_ID
+      - name: SERVICE_PRINCIPAL_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: "azure-ci"
+            key: SERVICE_PRINCIPAL_CLIENT_ID
+      - name: SERVICE_PRINCIPAL_CLIENT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: "azure-ci"
+            key: SERVICE_PRINCIPAL_CLIENT_PASSWORD

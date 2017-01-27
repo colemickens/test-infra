@@ -105,13 +105,16 @@ update-prow:
 	@make splice-deployment --no-print-directory
 	@make marque-image --no-print-directory
 	@make marque-deployment --no-print-directory
+	@make tot-image --no-print-directory
+	@make tot-deployment --no-print-directory
+	@make tot-service --no-print-directory
 	@make update-prow-ingress --no-print-directory
 
 clean-prow:
 	kubectl delete deployments marque deck hook sinker splice --ignore-not-found
 	kubectl delete ingress ing --ignore-not-found
-	kubectl delete configmap job-configs plugins --ignore-not-found
-	kubectl delete secret hmac-token oauth-token --ignore-not-found
+	kubectl delete configmap job-configs plugins jenkins-address --ignore-not-found
+	kubectl delete secret hmac-token oauth-token jenkins-token azure-ci service-account --ignore-not-found
 	kubectl delete job --all --ignore-not-found
 
 update-jobs:

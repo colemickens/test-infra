@@ -16,3 +16,4 @@ spec:
       containers:
       - name: sinker
         image: __REGISTRY__/sinker:0.4
+        imagePullPolicy: Always

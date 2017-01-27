@@ -249,6 +249,7 @@ func (c *testClient) TestKubernetes() error {
 
 	for i := range spec.Containers {
 		spec.Containers[i].Name = fmt.Sprintf("%s-%d", podName, i)
+		spec.Containers[i].ImagePullPolicy = "Always"
 		spec.Containers[i].Env = append(spec.Containers[i].Env,
 			kube.EnvVar{
 				Name:  "JOB_NAME",
