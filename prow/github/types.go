@@ -196,3 +196,7 @@ type Commit struct {
 	Removed  []string `json:"removed"`
 	Modified []string `json:"modified"`
 }
+
+type UserPermissionLevel struct {
+	Permission string `json:"permission"`
+}

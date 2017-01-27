@@ -150,6 +150,8 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 	req.Header.Set("Authorization", "Token "+c.token)
 	if strings.HasSuffix(path, "reactions") {
 		req.Header.Add("Accept", "application/vnd.github.squirrel-girl-preview")
+	} else if strings.HasSuffix(path, "permission") {
+		req.Header.Add("Accept", "application/vnd.github.korra-preview")
 	} else {
 		req.Header.Add("Accept", "application/vnd.github.v3+json")
 	}
@@ -180,6 +182,35 @@ func (c *Client) IsMember(org, user string) (bool, error) {
 		return false, fmt.Errorf("requester is not %s org member", org)
 	}
 	return false, fmt.Errorf("unexpected status: %s", resp.Status)
+}
+
+func (c *Client) GetUserPermissionLevel(owner, repo, username string) (string, error) {
+	c.log("GetUserPermissionLevel", owner, repo, username)
+	if c.fake {
+		return "admin", nil
+	}
+	resp, err := c.request(http.MethodGet, fmt.Sprintf("%s/repos/%s/%s/collaborators/%s/permission", c.base, owner, repo, username), nil)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != 200 {
+		c.log("returned non 200: body: %s", b)
+		return "", fmt.Errorf("GetUserPermissionLevel non 200: body: %s", b)
+	}
+
+	var pl UserPermissionLevel
+	if err := json.Unmarshal(b, &pl); err != nil {
+		return "", err
+	}
+
+	return pl.Permission, nil
 }
 
 // CreateComment creates a comment on the issue.
