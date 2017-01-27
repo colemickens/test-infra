@@ -16,6 +16,7 @@ spec:
       containers:
       - name: splice
         image: __REGISTRY__/splice:0.13
+        imagePullPolicy: Always
         volumeMounts:
         - name: config
           mountPath: /etc/config

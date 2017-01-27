@@ -36,6 +36,7 @@ spec:
       containers:
       - name: deck
         image: __REGISTRY__/deck:0.16
+        imagePullPolicy: Always
         ports:
           - name: http
             containerPort: 80
