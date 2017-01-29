@@ -32,16 +32,17 @@ CLUSTER = prow
 
 # These are the usual Azure variables.
 LOCATION = westus
-RESOURCE_GROUP = colemick-k8s-prow
+RESOURCE_GROUP = colemick-prow
 
 # Cloud-specfic variables
 #REGISTRY = $(REGISTRY)
 #DOCKER   = gcloud docker
 REGISTRY = docker.io/colemickens
 DOCKER   = docker
+KUBECONFIG = cluster/secrets/kubeconfig
 
 LE_EMAIL   = cole.mickens@gmail.com
-LE_DOMAINS = test0.prow.azure-containers.io
+LE_DOMAINS = test1.prow.azure-containers.io
 # TODO: sort this out, at least rename
 # TODO: Maintainer in the image is a Googler
 
@@ -65,10 +66,14 @@ create-cluster-gce:
 	gcloud -q container node-pools create build-pool --project "$(PROJECT)" --cluster "$(CLUSTER)" --zone "$(ZONE)" --machine-type n1-standard-8 --num-nodes 4 --local-ssd-count=1 --node-labels=role=build
 
 create-cluster-azure:
-	az group get --name=$(RESOURCE_GROUP) \
+	az group show --name=$(RESOURCE_GROUP) \
 		|| az group create --name=$(RESOURCE_GROUP) --location=$(LOCATION)
-	az acs get --name=prow --resource-group=$(RESOURCE_GROUP) \
+	az acs show --name=prow --resource-group=$(RESOURCE_GROUP) \
 		|| az acs create --name=prow --resource-group=$(RESOURCE_GROUP) --orchestrator=kubernetes --location=$(LOCATION) --agent-count=10 --agent-vm-size=Standard_D5_v2
+	rm ./cluster/secrets/kubeconfig*
+	az acs kubernetes get-credentials --name=prow --resource-group=$(RESOURCE_GROUP) -f $(KUBECONFIG)
+	$(eval export KUBECONFIG=$(KUBECONFIG))
+	@make update-prow-nginx
 
 configure-cluster-azure:
 	kubectl label node --all role=build role=prow --overwrite
@@ -107,11 +112,14 @@ update-prow:
 	@make marque-deployment --no-print-directory
 	@make tot-image --no-print-directory
 	@make tot-deployment --no-print-directory
+	@make deck-service --no-print-directory
+	@make hook-service --no-print-directory
+	@make marque-service --no-print-directory
 	@make tot-service --no-print-directory
 	@make update-prow-ingress --no-print-directory
 
 clean-prow:
-	kubectl delete deployments marque deck hook sinker splice --ignore-not-found
+	kubectl delete deployments marque deck hook sinker splice tot --ignore-not-found
 	kubectl delete ingress ing --ignore-not-found
 	kubectl delete configmap job-configs plugins jenkins-address --ignore-not-found
 	kubectl delete secret hmac-token oauth-token jenkins-token azure-ci service-account --ignore-not-found

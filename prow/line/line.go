@@ -175,9 +175,10 @@ func startJob(k startClient, jobName, context string, br BuildRequest) error {
 					RestartPolicy: "Never",
 					Containers: []kube.Container{
 						{
-							Name:  "line",
-							Image: lineImage,
-							Args:  args,
+							Name:            "line",
+							Image:           lineImage,
+							ImagePullPolicy: "Always",
+							Args:            args,
 							VolumeMounts: []kube.VolumeMount{
 								{
 									Name:      "jenkins",
@@ -199,7 +200,7 @@ func startJob(k startClient, jobName, context string, br BuildRequest) error {
 								{
 									Name: "JENKINS_URL",
 									ValueFrom: &kube.EnvVarSource{
-										ConfigMap: kube.ConfigMapKeySelector{
+										ConfigMap: &kube.ConfigMapKeySelector{
 											Name: "jenkins-address",
 											Key:  "jenkins-address",
 										},

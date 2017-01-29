@@ -17,48 +17,99 @@
 # TODO(fejta): Ensure all jobs define an owner.
 ---
 colemickens/acs-engine:
-- name: pull-acs-engine-unit-tests
-  context: ACS-Engine unit tests
+- name: acspr-checkin-tests
+  context: checkin-tests
   always_run: true
-  rerun_command: "@acs-bot unit test this"
-  trigger: "@acs-bot (unit )?test this"
+  rerun_command: "@acs-bot run checkin-tests"
+  trigger: "@acs-bot run checkin-tests"
   branches:
   - master
   spec:
     containers:
-    - image: docker.io/colemickens/acs-engine:bf30ceb13ed16068f8555b021c6bfed19f27737f
-      command: [ "/bin/bash", "-c", "/tmp/checkout-pr.sh && make ci" ]
-- name: pull-acs-engine-validate-k8s-msi
-  context: ACS-Engine validate k8s
+    - image: docker.io/colemickens/acs-engine:latest
+      command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && make ci" ]
+- name: acspr-e2e-k8s
+  context: e2e-k8s
   always_run: true
-  rerun_command: "@acs-bot validate k8s"
-  trigger: "@acs-bot validate k8s"
+  rerun_command: "@acs-bot run e2e-k8s"
+  trigger: "@acs-bot run e2e-k8s"
   branches:
   - master
   spec:
     containers:
-    - image: docker.io/colemickens/acs-engine:bf30ceb13ed16068f8555b021c6bfed19f27737f 
-      command: [ "/bin/bash", "-c", "/tmp/checkout-pr.sh && ./test/deploy-k8s.sh" ]
+    - image: docker.io/colemickens/acs-engine:latest
+      imagePullPolicy: Always
+      command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
       env:
-      - name: LOCATION
-        value: westus
-      - name: SUBSCRIPTION_ID
-        valueFrom:
-          secretKeyRef:
-            name: "azure-ci"
-            key: SUBSCRIPTION_ID
-      - name: TENANT_ID
-        valueFrom:
-          secretKeyRef:
-            name: "azure-ci"
-            key: TENANT_ID
-      - name: SERVICE_PRINCIPAL_CLIENT_ID
-        valueFrom:
-          secretKeyRef:
-            name: "azure-ci"
-            key: SERVICE_PRINCIPAL_CLIENT_ID
-      - name: SERVICE_PRINCIPAL_CLIENT_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: "azure-ci"
-            key: SERVICE_PRINCIPAL_CLIENT_PASSWORD
+      - { "name": "VALIDATE", "value": "y" }
+      - { "name": "CLUSTER_TYPE", "value": "kubernetes" }
+      - { "name": "CLUSTER_DEFINITION", "value": "examples/kubernetes.json" }
+      - { "name": "LOCATION", "value": "westus2" }
+      - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
+      - { "name": "TENANT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "TENANT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_SECRET", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_SECRET" } } }
+- name: acspr-e2e-dcos
+  context: e2e-dcos
+  always_run: true
+  rerun_command: "@acs-bot run e2e-dcos"
+  trigger: "@acs-bot run e2e-dcos"
+  branches:
+  - master
+  spec:
+    containers:
+    - image: docker.io/colemickens/acs-engine:latest
+      imagePullPolicy: Always
+      command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
+      env:
+      - { "name": "VALIDATE", "value": "y" }
+      - { "name": "CLUSTER_TYPE", "value": "dcos" }
+      - { "name": "CLUSTER_DEFINITION", "value": "examples/dcos.json" }
+      - { "name": "LOCATION", "value": "westus2" }
+      - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
+      - { "name": "TENANT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "TENANT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_SECRET", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_SECRET" } } }
+- name: acspr-e2e-swarmmode
+  context: e2e-swarmmode
+  always_run: true
+  rerun_command: "@acs-bot run e2e-swarmmode"
+  trigger: "@acs-bot run e2e-swarmmode"
+  branches:
+  - master
+  spec:
+    containers:
+    - image: docker.io/colemickens/acs-engine:latest
+      imagePullPolicy: Always
+      command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
+      env:
+      - { "name": "VALIDATE", "value": "y" }
+      - { "name": "CLUSTER_TYPE", "value": "swarmmode" }
+      - { "name": "CLUSTER_DEFINITION", "value": "examples/swarmmode.json" }
+      - { "name": "LOCATION", "value": "westus2" }
+      - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
+      - { "name": "TENANT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "TENANT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_ID" } } }
+      - { "name": "SERVICE_PRINCIPAL_CLIENT_SECRET", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_SECRET" } } }
+# TODO: swarm valdation script
+#- name: acspr-e2e-swarm
+#  context: e2e-swarm
+#  always_run: true
+#  rerun_command: "@acs-bot run e2e-swarm"
+#  trigger: "@acs-bot run e2e-swarm"
+#  branches:
+#  - master
+#  spec:
+#    containers:
+#    - image: docker.io/colemickens/acs-engine:latest
+#      imagePullPolicy: Always
+#      command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
+#      env:
+#      - { "name": "VALIDATE", "value": "y" }
+#      - { "name": "CLUSTER_TYPE", "value": "swarm" }
+#      - { "name": "CLUSTER_DEFINITION", "value": "examples/swarm.json" }
+#      - { "name": "LOCATION", "value": "westus2" }
+#      - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
+#      - { "name": "TENANT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "TENANT_ID" } } }
+#      - { "name": "SERVICE_PRINCIPAL_CLIENT_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_ID" } } }
+#      - { "name": "SERVICE_PRINCIPAL_CLIENT_SECRET", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SERVICE_PRINCIPAL_CLIENT_SECRET" } } }

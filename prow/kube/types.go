@@ -152,8 +152,8 @@ type EnvVar struct {
 }
 
 type EnvVarSource struct {
-	ConfigMap ConfigMapKeySelector `json:"configMapKeyRef,omitempty"`
-	Secret    SecretKeySelector    `json:"secretKeyRef,omitempty"`
+	ConfigMap *ConfigMapKeySelector `json:"configMapKeyRef,omitempty"`
+	Secret    *SecretKeySelector    `json:"secretKeyRef,omitempty"`
 }
 
 type ConfigMapKeySelector struct {

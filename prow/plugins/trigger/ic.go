@@ -43,7 +43,9 @@ func handleIC(c client, ic github.IssueCommentEvent) error {
 		return nil
 	}
 	// Skip bot comments.
-	if author == "k8s-bot" || author == "k8s-ci-robot" {
+	// TODO: parameterize this
+	// TODO: what is k8s-ci-robot even? is it jenkins?
+	if author == "acs-bot" || author == "acs-ci-robot" {
 		return nil
 	}
 

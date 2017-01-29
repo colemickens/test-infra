@@ -39,7 +39,7 @@ spec:
         imagePullPolicy: Always
         env:
         - name: LINE_IMAGE
-          value: "__REGISTRY__/line:0.69"
+          value: "__REGISTRY__/line:0.70"
         - name: DRY_RUN
           value: "false"
         ports:
