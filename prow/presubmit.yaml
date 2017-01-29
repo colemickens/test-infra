@@ -41,8 +41,7 @@ colemickens/acs-engine:
       imagePullPolicy: Always
       command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
       env:
-      - { "name": "VALIDATE", "value": "y" }
-      - { "name": "CLUSTER_TYPE", "value": "kubernetes" }
+      - { "name": "VALIDATE", "value": "test/cluster-tests/kubernetes/test.sh" }
       - { "name": "CLUSTER_DEFINITION", "value": "examples/kubernetes.json" }
       - { "name": "LOCATION", "value": "westus2" }
       - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
@@ -62,8 +61,7 @@ colemickens/acs-engine:
       imagePullPolicy: Always
       command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
       env:
-      - { "name": "VALIDATE", "value": "y" }
-      - { "name": "CLUSTER_TYPE", "value": "dcos" }
+      - { "name": "VALIDATE", "value": "test/cluster-tests/dcos/test.sh" }
       - { "name": "CLUSTER_DEFINITION", "value": "examples/dcos.json" }
       - { "name": "LOCATION", "value": "westus2" }
       - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
@@ -83,8 +81,7 @@ colemickens/acs-engine:
       imagePullPolicy: Always
       command: [ "/bin/bash", "-xc", "/tmp/checkout-pr.sh && pwd && ls && ./test/deploy.sh" ]
       env:
-      - { "name": "VALIDATE", "value": "y" }
-      - { "name": "CLUSTER_TYPE", "value": "swarmmode" }
+      - { "name": "VALIDATE", "value": "test/cluster-tests/swarmmode/test.sh" }
       - { "name": "CLUSTER_DEFINITION", "value": "examples/swarmmode.json" }
       - { "name": "LOCATION", "value": "westus2" }
       - { "name": "SUBSCRIPTION_ID", "valueFrom": { "secretKeyRef": { "name": "azure-ci", "key": "SUBSCRIPTION_ID" } } }
