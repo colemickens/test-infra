@@ -94,24 +94,27 @@ update-prow-ingress:
 		| kubectl apply -f -
 
 update-prow-nginx:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/contrib/master/ingress/controllers/nginx/examples/default/rc-default.yaml
-	kubectl apply -f https://gist.githubusercontent.com/colemickens/f5a1c751ca5ae54f0d6747895da062bc/raw/85c008b290e86e58508fee06b50afbd4648d313c/gistfile1.txt
-	kubectl apply -f https://gist.githubusercontent.com/colemickens/8ef928fb3d642929cdc77dd67ce4dda9/raw/0aa652e2481467081479fb016d8d24b0295d3238/gistfile1.txt
+	kubectl apply -f cluster-nginx-ingress/default-backend.deployment.yaml
+	kubectl apply -f cluster-nginx-ingress/nginx-ingress.deployment.yaml
+	kubectl apply -f cluster-nginx-ingress/nginx-ingress.service.yaml
 
 update-prow:
 	@make line-image --no-print-directory
+	@make crier-image --no-print-directory
+	@make crier-deployment --no-print-directory
 	@make hook-image --no-print-directory
-	@make sinker-image --no-print-directory
-	@make deck-image --no-print-directory
 	@make hook-deployment --no-print-directory
-	@make sinker-deployment --no-print-directory
+	@make deck-image --no-print-directory
 	@make deck-deployment --no-print-directory
+	@make sinker-image --no-print-directory
+	@make sinker-deployment --no-print-directory
 	@make splice-image --no-print-directory
 	@make splice-deployment --no-print-directory
 	@make marque-image --no-print-directory
 	@make marque-deployment --no-print-directory
 	@make tot-image --no-print-directory
 	@make tot-deployment --no-print-directory
+	@make crier-service --no-print-directory
 	@make deck-service --no-print-directory
 	@make hook-service --no-print-directory
 	@make marque-service --no-print-directory
@@ -187,6 +190,7 @@ marque-image:
 	docker build -t "$(REGISTRY)/marque:$(MARQUE_VERSION)" cmd/marque
 	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
+# this le stuff sould be in the config map yaeh?
 marque-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
 	| sed 's|__LETSENCRYPT_EMAIL__|$(LE_EMAIL)|g' \
@@ -209,13 +213,13 @@ tot-service:
 
 crier-image:
 	CGO_ENABLED=0 go build -o cmd/crier/crier k8s.io/test-infra/prow/cmd/crier
-	docker build -t "gcr.io/$(PROJECT)/crier:$(CRIER_VERSION)" cmd/crier
-	gcloud docker -- push "gcr.io/$(PROJECT)/crier:$(CRIER_VERSION)"
+	docker build -t "$(REGISTRY)/crier:$(CRIER_VERSION)" cmd/crier
+	$(DOCKER) -- push "$(REGISTRY)/crier:$(CRIER_VERSION)"
 
 crier-deployment:
-	kubectl apply -f cluster/crier_deployment.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_deployment.yaml | kubectl apply -f -
 
 crier-service:
-	kubectl apply -f cluster/crier_service.yaml
+	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_service.yaml | kubectl apply -f -
 
 .PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment
