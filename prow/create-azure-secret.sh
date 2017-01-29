@@ -11,10 +11,10 @@ tenant_id="${TENANT_ID}"
 client_id="${SERVICE_PRINCIPAL_CLIENT_ID}"
 client_secret="${SERVICE_PRINCIPAL_CLIENT_SECRET}"
 
-subscription_id="$(echo $subscription_id | base64)"
-tenant_id="$(echo $tenant_id | base64)"
-client_id="$(echo $client_id | base64)"
-client_secret="$(echo $client_secret | base64)"
+subscription_id="$(echo -n $subscription_id | base64)"
+tenant_id="$(echo -n $tenant_id | base64)"
+client_id="$(echo -n $client_id | base64)"
+client_secret="$(echo -n $client_secret | base64)"
 
 cat << EOF > "${secret}"
 apiVersion: v1

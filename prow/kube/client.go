@@ -253,8 +253,10 @@ func (c *Client) CreatePod(p Pod) (Pod, error) {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods", c.namespace)
 	body, err := c.request(http.MethodPost, path, map[string]string{}, buf)
 	if err != nil {
+		err = fmt.Errorf("ZZZZZZZ %v \n %v", body, err)
 		return Pod{}, err
 	}
+	// TODO: pretty sure this is lekaing the body readers, right? (or does unmarhsal readclose?)
 	var retPod Pod
 	if err = json.Unmarshal(body, &retPod); err != nil {
 		return Pod{}, err
