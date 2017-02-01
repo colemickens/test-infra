@@ -39,12 +39,10 @@ RESOURCE_GROUP = colemick-prow
 #DOCKER   = gcloud docker
 REGISTRY = docker.io/colemickens
 DOCKER   = docker
-KUBECONFIG = cluster/secrets/kubeconfig
 
-LE_EMAIL   = cole.mickens@gmail.com
-LE_DOMAINS = test1.prow.azure-containers.io
-# TODO: sort this out, at least rename
-# TODO: Maintainer in the image is a Googler
+EMAIL   = colemick@microsoft.com
+PRIMARY_DOMAIN = prow.ci.azure-containers.io
+DOMAINS = $(PRIMARY_DOMAIN)
 
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
@@ -76,7 +74,8 @@ create-cluster-azure:
 	@make update-prow-nginx
 
 configure-cluster-azure:
-	kubectl label node --all role=build role=prow --overwrite
+	kubectl label node --all role=build --overwrite
+	kubectl label node node*0 role=prow --overwrite
 
 deploy-prow:
 	kubectl create secret generic hmac-token --from-file=hmac=$(HOOK_SECRET_FILE)
@@ -87,16 +86,6 @@ deploy-prow:
 	kubectl create configmap config --from-file=config=config.yaml
 	kubectl create configmap plugins --from-file=plugins=plugins.yaml
 	@make update-prow
-
-update-prow-ingress:
-	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/ingress.yaml \
-	| sed 's|__PROW_DOMAIN__|$(LE_DOMAINS)|' \
-		| kubectl apply -f -
-
-update-prow-nginx:
-	kubectl apply -f cluster-nginx-ingress/default-backend.deployment.yaml
-	kubectl apply -f cluster-nginx-ingress/nginx-ingress.deployment.yaml
-	kubectl apply -f cluster-nginx-ingress/nginx-ingress.service.yaml
 
 update-prow:
 	@make line-image --no-print-directory
@@ -119,14 +108,13 @@ update-prow:
 	@make hook-service --no-print-directory
 	@make marque-service --no-print-directory
 	@make tot-service --no-print-directory
-	@make update-prow-ingress --no-print-directory
+	@make prow-ingress --no-print-directory
 
 clean-prow:
 	kubectl delete deployments marque deck hook sinker splice tot --ignore-not-found
-	kubectl delete ingress ing --ignore-not-found
+	kubectl delete ingress prow-deck --ignore-not-found
 	kubectl delete configmap job-configs plugins jenkins-address --ignore-not-found
 	kubectl delete secret hmac-token oauth-token jenkins-token azure-ci service-account --ignore-not-found
-	kubectl delete job --all --ignore-not-found
 
 update-jobs:
 	kubectl create configmap config --from-file=config=config.yaml --dry-run -o yaml | kubectl replace configmap config -f -
@@ -193,8 +181,8 @@ marque-image:
 # this le stuff sould be in the config map yaeh?
 marque-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
-	| sed 's|__LETSENCRYPT_EMAIL__|$(LE_EMAIL)|g' \
-	| sed 's|__LETSENCRYPT_DOMAINS__|$(LE_DOMAINS)|g' \
+	| sed 's|__LETSENCRYPT_EMAIL__|$(EMAIL)|g' \
+	| sed 's|__LETSENCRYPT_DOMAIN__|$(DOMAIN)|g' \
 		| kubectl apply -f -
 
 marque-service:
@@ -221,5 +209,9 @@ crier-deployment:
 
 crier-service:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_service.yaml | kubectl apply -f -
+
+prow-ingress:
+	sed 's|__DOMAIN__|$(DOMAIN)|g' cluster/ingress.yaml \
+		| kubectl apply -f -
 
 .PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment

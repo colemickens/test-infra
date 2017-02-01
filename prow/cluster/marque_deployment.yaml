@@ -35,7 +35,7 @@ spec:
           - name: http
             containerPort: 80
         env:
-          - name: 'LETSENCRYPT_EMAIL'
-            value: '__LETSENCRYPT_EMAIL__'
-          - name: 'LETSENCRYPT_DOMAINS'
-            value: '__LETSENCRYPT_DOMAINS__'
+          - name: 'EMAIL'
+            value: '__EMAIL__'
+          - name: 'DOMAINS'
+            value: '__DOMAINS__'
