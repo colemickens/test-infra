@@ -36,27 +36,30 @@ const (
 	generateWaitTime = 15 * time.Second
 	// Time between renewals.
 	renewTime = 12 * time.Hour
-
-	secretName = "prow-k8s-cert"
 )
 
 var (
-	email   string
-	domains []string
+	email      string
+	domains    []string
+	secretName string
 )
 
 func init() {
 	email = os.Getenv("EMAIL")
-	domainsRaw := os.Getenv("DOMAINS")
-
 	if email == "" {
 		email = "spxtr@google.com"
 	}
 
+	domainsRaw := os.Getenv("DOMAINS")
 	if domainsRaw != "" {
 		domains = strings.Split(domainsRaw, ",")
 	} else {
 		domains = []string{"prow.k8s.io", "prow.kubernetes.io"}
+	}
+
+	secretName = os.Getenv("SECRET_NAME")
+	if secretName == "" {
+		secretName = "prow-k8s-cert"
 	}
 }
 
@@ -111,8 +114,6 @@ func generate(root string) error {
 	for _, domain := range domains {
 		args = append(args, "-d", domain)
 	}
-
-	args = append(args, domainArgs...)
 
 	logrus.Infof("Running: certbot %s", strings.Join(args, " "))
 	cmd := exec.Command("certbot", args...)

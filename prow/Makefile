@@ -41,8 +41,8 @@ REGISTRY = docker.io/colemickens
 DOCKER   = docker
 
 EMAIL   = colemick@microsoft.com
-PRIMARY_DOMAIN = prow.ci.azure-containers.io
-DOMAINS = $(PRIMARY_DOMAIN)
+DOMAIN = prow.ci.azure-containers.io
+SECRET_NAME = marque-deck-tls
 
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
@@ -72,10 +72,6 @@ create-cluster-azure:
 	az acs kubernetes get-credentials --name=prow --resource-group=$(RESOURCE_GROUP) -f $(KUBECONFIG)
 	$(eval export KUBECONFIG=$(KUBECONFIG))
 	@make update-prow-nginx
-
-configure-cluster-azure:
-	kubectl label node --all role=build --overwrite
-	kubectl label node node*0 role=prow --overwrite
 
 deploy-prow:
 	kubectl create secret generic hmac-token --from-file=hmac=$(HOOK_SECRET_FILE)
@@ -111,7 +107,7 @@ update-prow:
 	@make prow-ingress --no-print-directory
 
 clean-prow:
-	kubectl delete deployments marque deck hook sinker splice tot --ignore-not-found
+	kubectl delete deployments crier marque deck hook sinker splice tot --ignore-not-found
 	kubectl delete ingress prow-deck --ignore-not-found
 	kubectl delete configmap job-configs plugins jenkins-address --ignore-not-found
 	kubectl delete secret hmac-token oauth-token jenkins-token azure-ci service-account --ignore-not-found
@@ -178,11 +174,11 @@ marque-image:
 	docker build -t "$(REGISTRY)/marque:$(MARQUE_VERSION)" cmd/marque
 	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
-# this le stuff sould be in the config map yaeh?
 marque-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
-	| sed 's|__LETSENCRYPT_EMAIL__|$(EMAIL)|g' \
-	| sed 's|__LETSENCRYPT_DOMAIN__|$(DOMAIN)|g' \
+	| sed 's|__EMAIL__|$(EMAIL)|g' \
+	| sed 's|__DOMAINS__|$(DOMAIN)|g' \
+	| sed 's|__SECRET_NAME__|$(SECRET_NAME)|g' \
 		| kubectl apply -f -
 
 marque-service:
@@ -214,4 +210,4 @@ prow-ingress:
 	sed 's|__DOMAIN__|$(DOMAIN)|g' cluster/ingress.yaml \
 		| kubectl apply -f -
 
-.PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment
+.PHONY: hook-image hook-deployment hook-service test-pr-image sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment marque-image marque-deployment marque-service tot-image tot-service tot-deployment crier-image crier-service crier-deployment prow-ingress

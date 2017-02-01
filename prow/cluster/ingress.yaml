@@ -15,18 +15,22 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: prow-deck
+  name: deck
   annotations:
     "kubernetes.io/ingress.global-static-ip-name": prow
 spec:
   tls:
   - secretName: 'prow-k8s-cert'
     hosts:
-    - '__PROW_DOMAIN__'
+    - '__DOMAIN__'
   rules:
-  - host: '__PROW_DOMAIN__'
+  - host: '__DOMAIN__'
     http:
       paths:
+      - path: /
+        backend:
+          serviceName: deck
+          servicePort: 80
       - path: /hook
         backend:
           serviceName: hook

@@ -303,14 +303,6 @@ func (c *testClient) TestKubernetes() error {
 				MountPath: "/root/.cache",
 			},
 		)
-		// Set the HostPort to 9999 for all build pods so that they are forced
-		// onto different nodes. Once pod affinity is GA, use that instead.
-		spec.Containers[i].Ports = append(spec.Containers[i].Ports,
-			kube.Port{
-				ContainerPort: 9999,
-				HostPort:      9999,
-			},
-		)
 	}
 	spec.Volumes = append(spec.Volumes,
 		kube.Volume{
