@@ -15,7 +15,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: ing
+  name: prow-deck
   annotations:
     "kubernetes.io/ingress.global-static-ip-name": prow
 spec:
@@ -34,46 +34,4 @@ spec:
       - path: /.well-known/
         backend:
           serviceName: marque
-          servicePort: 80
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: ing2
-  annotations:
-    "ingress.kubernetes.io/auth-url": "https://__PROW_DOMAIN__/oauth2/auth"
-    "ingress.kubernetes.io/auth-signin": "https://__PROW_DOMAIN__/oauth2/sign_in"
-    "kubernetes.io/ingress.global-static-ip-name": prow
-spec:
-  tls:
-  - secretName: 'prow-k8s-cert'
-    hosts:
-    - '__PROW_DOMAIN__'
-  rules:
-  - host: '__PROW_DOMAIN__'
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: deck
-          servicePort: 80
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: ing3
-  annotations:
-    "kubernetes.io/ingress.global-static-ip-name": prow
-spec:
-  tls:
-  - secretName: 'prow-k8s-cert'
-    hosts:
-    - '__PROW_DOMAIN__'
-  rules:
-  - host: '__PROW_DOMAIN__'
-    http:
-      paths:
-      - path: /oauth2
-        backend:
-          serviceName: oauth2proxy
           servicePort: 80

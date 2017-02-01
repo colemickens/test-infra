@@ -32,7 +32,7 @@ spec:
       - name: crier
         image: __REGISTRY__/crier:0.2
         args:
-        - "--dry-run=true"
+        - "--dry-run=false"
         imagePullPolicy: Always
         ports:
           - name: http

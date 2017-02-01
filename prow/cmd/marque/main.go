@@ -46,8 +46,8 @@ var (
 )
 
 func init() {
-	email = os.Getenv("LETSENCRYPT_EMAIL")
-	domainsRaw := os.Getenv("LETSENCRYPT_DOMAINS")
+	email = os.Getenv("EMAIL")
+	domainsRaw := os.Getenv("DOMAINS")
 
 	if email == "" {
 		email = "spxtr@google.com"
@@ -99,12 +99,6 @@ func main() {
 }
 
 func generate(root string) error {
-	domainArgs := make([]string, len(domains)*2)
-	for i, domain := range domains {
-		domainArgs[2*i] = "-d"
-		domainArgs[2*i+1] = domain
-	}
-
 	args := []string{
 		"certonly",
 		"--agree-tos",
@@ -114,6 +108,10 @@ func generate(root string) error {
 		"-vvv",
 		"-w", root,
 	}
+	for _, domain := range domains {
+		args = append(args, "-d", domain)
+	}
+
 	args = append(args, domainArgs...)
 
 	logrus.Infof("Running: certbot %s", strings.Join(args, " "))
