@@ -39,3 +39,5 @@ spec:
             value: '__EMAIL__'
           - name: 'DOMAINS'
             value: '__DOMAINS__'
+          - name: 'SECRET_NAME'
+            value: '__SECRET_NAME__'
