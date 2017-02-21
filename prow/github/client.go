@@ -476,3 +476,28 @@ func (c *Client) FindIssues(query string) ([]Issue, error) {
 	}, &issSearchResult)
 	return issSearchResult.Issues, err
 }
+
+func (c *Client) GetUser(username string) (*User, error) {
+	c.log("GetUser", username)
+	if c.fake {
+		return nil, nil
+	}
+	resp, err := c.request(http.MethodGet, fmt.Sprintf("user/%s", username), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("response not 200: %s", resp.Status)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var user User
+	if err := json.Unmarshal(b, &user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

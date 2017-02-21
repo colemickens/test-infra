@@ -36,7 +36,7 @@ RESOURCE_GROUP = colemick-prow
 
 # Cloud-specfic variables
 #REGISTRY = $(REGISTRY)
-#DOCKER   = gcloud docker
+#DOCKER   = gcloud docker --
 REGISTRY = docker.io/colemickens
 DOCKER   = docker
 
@@ -47,16 +47,16 @@ SECRET_NAME = marque-deck-tls
 # These are GitHub credentials in files on your own machine.
 # The hook secret is your HMAC token, the OAuth secret is the OAuth
 # token of whatever account you want to comment and update statuses.
-HOOK_SECRET_FILE = cluster/secrets/hook
-OAUTH_SECRET_FILE = cluster/secrets/k8s-oauth-token
+HOOK_SECRET_FILE = $(HOME)/secrets/hook
+OAUTH_SECRET_FILE = $(HOME)/secrets/k8s-oauth-token
 
 # The Jenkins secret is the API token, and the address file contains Jenkins'
 # URL, such as http://pull-jenkins-master:8080, without a newline.
-JENKINS_SECRET_FILE = cluster/secrets/jenkins
-JENKINS_ADDRESS_FILE = cluster/secrets/jenkins-address
+JENKINS_SECRET_FILE = $(HOME)/secrets/jenkins
+JENKINS_ADDRESS_FILE = $(HOME)/secrets/jenkins-address
 
 # Service account key for bootstrap jobs.
-SERVICE_ACCOUNT_FILE = cluster/secrets/service-account.json
+SERVICE_ACCOUNT_FILE = $(HOME)/secrets/service-account.json
 
 # Should probably move this to a script or something.
 create-cluster-gce:
@@ -104,7 +104,6 @@ update-prow:
 	@make hook-service --no-print-directory
 	@make marque-service --no-print-directory
 	@make tot-service --no-print-directory
-	@make prow-ingress --no-print-directory
 
 clean-prow:
 	kubectl delete deployments crier marque deck hook sinker splice tot --ignore-not-found
@@ -129,7 +128,7 @@ test:
 hook-image:
 	CGO_ENABLED=0 go build -o cmd/hook/hook k8s.io/test-infra/prow/cmd/hook
 	docker build -t "$(REGISTRY)/hook:$(HOOK_VERSION)" cmd/hook
-	$(DOCKER) -- push "$(REGISTRY)/hook:$(HOOK_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/hook:$(HOOK_VERSION)"
 
 hook-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/hook_deployment.yaml | kubectl apply -f -
@@ -140,12 +139,12 @@ hook-service:
 line-image:
 	CGO_ENABLED=0 go build -o cmd/line/line k8s.io/test-infra/prow/cmd/line
 	docker build -t "$(REGISTRY)/line:$(LINE_VERSION)" cmd/line
-	$(DOCKER) -- push "$(REGISTRY)/line:$(LINE_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/line:$(LINE_VERSION)"
 
 sinker-image:
 	CGO_ENABLED=0 go build -o cmd/sinker/sinker k8s.io/test-infra/prow/cmd/sinker
 	docker build -t "$(REGISTRY)/sinker:$(SINKER_VERSION)" cmd/sinker
-	$(DOCKER) -- push "$(REGISTRY)/sinker:$(SINKER_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/sinker:$(SINKER_VERSION)"
 
 sinker-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/sinker_deployment.yaml | kubectl apply -f -
@@ -153,7 +152,7 @@ sinker-deployment:
 deck-image:
 	CGO_ENABLED=0 go build -o cmd/deck/deck k8s.io/test-infra/prow/cmd/deck
 	docker build -t "$(REGISTRY)/deck:$(DECK_VERSION)" cmd/deck
-	$(DOCKER) -- push "$(REGISTRY)/deck:$(DECK_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/deck:$(DECK_VERSION)"
 
 deck-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/deck_deployment.yaml | kubectl apply -f -
@@ -164,7 +163,7 @@ deck-service:
 splice-image:
 	CGO_ENABLED=0 go build -o cmd/splice/splice k8s.io/test-infra/prow/cmd/splice
 	docker build -t "$(REGISTRY)/splice:$(SPLICE_VERSION)" cmd/splice
-	$(DOCKER) -- push "$(REGISTRY)/splice:$(SPLICE_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/splice:$(SPLICE_VERSION)"
 
 splice-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/splice_deployment.yaml | kubectl apply -f -
@@ -172,7 +171,7 @@ splice-deployment:
 marque-image:
 	CGO_ENABLED=0 go build -o cmd/marque/marque k8s.io/test-infra/prow/cmd/marque
 	docker build -t "$(REGISTRY)/marque:$(MARQUE_VERSION)" cmd/marque
-	$(DOCKER) -- push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/marque:$(MARQUE_VERSION)"
 
 marque-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/marque_deployment.yaml \
@@ -187,7 +186,7 @@ marque-service:
 tot-image:
 	CGO_ENABLED=0 go build -o cmd/tot/tot k8s.io/test-infra/prow/cmd/tot
 	docker build -t "$(REGISTRY)/tot:$(TOT_VERSION)" cmd/tot
-	$(DOCKER) -- push "$(REGISTRY)/tot:$(TOT_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/tot:$(TOT_VERSION)"
 
 tot-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/tot_deployment.yaml | kubectl apply -f -
@@ -198,7 +197,7 @@ tot-service:
 crier-image:
 	CGO_ENABLED=0 go build -o cmd/crier/crier k8s.io/test-infra/prow/cmd/crier
 	docker build -t "$(REGISTRY)/crier:$(CRIER_VERSION)" cmd/crier
-	$(DOCKER) -- push "$(REGISTRY)/crier:$(CRIER_VERSION)"
+	$(DOCKER) push "$(REGISTRY)/crier:$(CRIER_VERSION)"
 
 crier-deployment:
 	sed 's|__REGISTRY__|$(REGISTRY)|g' cluster/crier_deployment.yaml | kubectl apply -f -
