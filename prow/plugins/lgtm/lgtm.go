@@ -41,7 +41,7 @@ type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetUserPermissionLevel(owner, repo, username string) (string, error)
+	//GetUserPermissionLevel(owner, repo, username string) (string, error)
 }
 
 func handleIssueComment(pc plugins.PluginClient, ic github.IssueCommentEvent) error {
@@ -74,11 +74,11 @@ func handle(gc githubClient, log *logrus.Entry, ic github.IssueCommentEvent) err
 	commentAuthor := ic.Comment.User.Login
 	isAssignee := ic.Issue.IsAssignee(commentAuthor)
 	isAuthor := ic.Issue.IsAuthor(commentAuthor)
-	hasWritePermissions, err := hasWritePermissions(gc, org, repo, ic.Comment.User.Login)
+	/*hasWritePermissions, err := hasWritePermissions(gc, org, repo, ic.Comment.User.Login)
 	if err != nil {
 		return err
-	}
-	if isAuthor && wantLGTM && !hasWritePermissions {
+	}*/
+	if isAuthor && wantLGTM /*&& !hasWritePermissions*/ {
 		resp := "you can't LGTM your own PR"
 		log.Infof("Commenting with \"%s\".", resp)
 		return gc.CreateComment(org, repo, number, plugins.FormatResponse(ic.Comment, resp))
@@ -106,6 +106,7 @@ func handle(gc githubClient, log *logrus.Entry, ic github.IssueCommentEvent) err
 	return nil
 }
 
+/*
 func hasWritePermissions(gc githubClient, org, repo, username string) (bool, error) {
 	permission, err := gc.GetUserPermissionLevel(org, repo, username)
 	if err != nil {
@@ -114,3 +115,4 @@ func hasWritePermissions(gc githubClient, org, repo, username string) (bool, err
 
 	return (permission == "admin" || permission == "write"), nil
 }
+*/

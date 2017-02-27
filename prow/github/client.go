@@ -233,6 +233,7 @@ func (c *Client) IsMember(org, user string) (bool, error) {
 	return false, fmt.Errorf("unexpected status: %d", code)
 }
 
+/*
 func (c *Client) GetUserPermissionLevel(owner, repo, username string) (string, error) {
 	c.log("GetUserPermissionLevel", owner, repo, username)
 	if c.fake {
@@ -261,6 +262,7 @@ func (c *Client) GetUserPermissionLevel(owner, repo, username string) (string, e
 
 	return pl.Permission, nil
 }
+*/
 
 // CreateComment creates a comment on the issue.
 func (c *Client) CreateComment(org, repo string, number int, comment string) error {
@@ -477,6 +479,7 @@ func (c *Client) FindIssues(query string) ([]Issue, error) {
 	return issSearchResult.Issues, err
 }
 
+/*
 func (c *Client) GetUser(username string) (*User, error) {
 	c.log("GetUser", username)
 	if c.fake {
@@ -501,3 +504,4 @@ func (c *Client) GetUser(username string) (*User, error) {
 	}
 	return &user, nil
 }
+*/
