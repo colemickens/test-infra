@@ -30,3 +30,4 @@ echo "new version: $new_version"
 
 sed -i "s/$makefile_version_re.*/\1$new_version/" Makefile
 sed -i "s/\(${1,,}:\)[0-9.]*/\1$new_version/" cluster/*.yaml
+sed -i "s/\(${1,,}: *\)[0-9.]*/\1$new_version/" chart/templates/*.yaml
