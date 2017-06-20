@@ -22,9 +22,9 @@ spec:
   tls:
   - secretName: 'prow-k8s-cert'
     hosts:
-    - '__DOMAIN__'
+    - 'ingress.azure-containers.io'
   rules:
-  - host: '__DOMAIN__'
+  - host: 'ingress.azure-containers.io'
     http:
       paths:
       - path: /
